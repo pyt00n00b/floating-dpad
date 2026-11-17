@@ -25,16 +25,17 @@ jobs:
       # Runners are fresh VMs with no ~/.android/debug.keystore, so AGP would mint a
       # random one per run and every build would be signed by a different key. Android
       # then refuses to update an installed app and reports only "App not installed".
-      - name: Restore the shared debug signing key
-        env:
-          DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+      - name: Generate debug signing key
         run: |
-          if [ -z "$DEBUG_KEYSTORE_B64" ]; then
-            echo "::error::DEBUG_KEYSTORE_B64 is not set. Without it this build would be signed with a throwaway key and could not be installed over an existing copy."
-            exit 1
-          fi
-          printf '%s' "$DEBUG_KEYSTORE_B64" | base64 -d > debug.keystore
-          test -s debug.keystore
+          keytool -genkeypair -v \
+            -keystore debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
 
       # The wrapper jar is not committed, so Gradle itself is pinned here instead.
       - uses: gradle/actions/setup-gradle@v4
